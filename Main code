@@ -1,0 +1,191 @@
+import pyttsx3
+import speech_recognition as sr
+import datetime
+import os
+import requests
+import random
+import pyautogui
+import time
+
+# Contact dictionary
+contacts = {
+    "mom": "1234567890",
+    "friend 1": "0987654321",
+    "friend 2": "1122334455",
+    "friend 3": "2233445566"
+}
+
+# Initialize pyttsx3 engine
+engine = pyttsx3.init()
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[1].id)  # Female voice
+engine.setProperty('rate', 120)  # Speech rate
+
+# Function to speak
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
+
+# Function to listen
+def listen():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening...")
+        audio = recognizer.listen(source)
+        try:
+            command = recognizer.recognize_google(audio)
+            print(f"You said: {command}")
+            return command.lower()
+        except sr.UnknownValueError:
+            print("Sorry, I could not understand.")
+            return ""
+        except sr.RequestError:
+            print("Could not connect to the service.")
+            return ""
+
+# Function to write in notepad
+def write_in_notepad():
+    speak("What should I write in Notepad?")
+    text = listen()
+    time.sleep(2)
+    pyautogui.write(text, interval=0.05)
+    speak("I’ve written your message in Notepad.")
+
+# Function to get weather
+def get_weather(city="Patiala"):
+    try:
+        url = f"https://wttr.in/{city}?format=3"
+        response = requests.get(url)
+        return response.text if response.status_code == 200 else "Couldn't get weather info."
+    except:
+        return "Error connecting to weather service."
+
+# Emotion-based responses
+emotion_responses = {
+    "happy": [
+        "I'm so glad to hear that you're happy! What's making you smile today?",
+        "Yay! It’s always great to feel happy! What's going on?",
+        "Happiness is contagious! Keep smiling."
+    ],
+    "sad": [
+        "I'm really sorry you're feeling sad. I'm here for you, want to talk about it?",
+        "It’s okay to feel sad sometimes. Would you like some company?",
+        "I’m here for you, things will get better. Want me to cheer you up?"
+    ],
+    "angry": [
+        "I can sense some anger. Let’s take a deep breath and calm down together.",
+        "It seems like you're upset. Want to talk about what's bothering you?",
+        "I'm here to listen, anger doesn’t last forever."
+    ],
+    "stressed": [
+        "I can sense you're feeling stressed. Would you like to talk or take a break?",
+        "Take a deep breath, I’m here to help you through it.",
+        "Stress can be tough. Would you like some stress-relief tips?"
+    ]
+}
+
+# Detect emotion
+def detect_emotion(command):
+    for emotion in emotion_responses:
+        if emotion in command:
+            return random.choice(emotion_responses[emotion])
+    return "I'm here for you, no matter how you're feeling."
+
+# Send WhatsApp message
+# Send WhatsApp message via WhatsApp Web
+def send_whatsapp_message():
+    speak("Whom should I message? Say the name.")
+    name = listen()
+    if name in contacts:
+        speak("What is the message?")
+        message = listen()
+        speak("Sending message now via WhatsApp for Web.")
+
+        # Open WhatsApp Web
+        os.system("start https://web.whatsapp.com")
+        time.sleep(6)  # Wait for WhatsApp Web to fully load
+
+        # Search for the contact
+        pyautogui.hotkey("ctrl", "f")
+        time.sleep(1)
+        pyautogui.write(name)
+        time.sleep(2)
+
+        # Click on the contact name from the search results
+        pyautogui.click(x=300, y=300)  # Adjust x, y based on where the contact name appears
+
+        time.sleep(3)  # Wait for the chat to load properly
+
+        # Click on the message input box
+        pyautogui.click(x=800, y=900)  # Coordinates for the message box
+        time.sleep(1)
+
+        # Type the message
+        pyautogui.write(message, interval=0.05)
+        time.sleep(1)
+
+        # Press Enter to send the message
+        pyautogui.press("enter")
+        speak(f"Message sent to {name}.")
+    else:
+        speak("I couldn't find that contact. Please try again.")
+
+
+# Main loop
+while True:
+    command = listen()
+    if "hello vani" in command:
+        speak("Hello Vani here, I'm listening now.")
+        while True:
+            command = listen()
+            if "hello" in command:
+                speak("Hello! How can I help you today?")
+            elif any(emotion in command for emotion in emotion_responses):
+                speak(detect_emotion(command))
+            elif "time" in command:
+                speak(f"The time is {datetime.datetime.now().strftime('%I:%M %p')}")
+            elif "weather" in command:
+                speak("Please tell the city.")
+                city = listen()
+                speak(f"Here's the weather update: {get_weather(city)}")
+            elif "open notepad" in command:
+                os.system("notepad")
+                speak("Notepad has been opened.")
+            elif "open camera" in command:
+                os.system("start microsoft.windows.camera:")
+                speak("Camera has been opened.")
+            elif "open microsoft edge" in command:
+                os.system("start msedge")
+                speak("Microsoft Edge has been opened.")
+            elif "open settings" in command:
+                os.system("start ms-settings:")
+                speak("Settings have been opened.")
+            elif "open whatsapp" in command:
+                speak("Say the key to open WhatsApp.")
+                if "04" in listen():
+                    os.system("start whatsapp:")
+                    speak("WhatsApp has been opened.")
+                else:
+                    speak("Wrong key.")
+            elif "send whatsapp message" in command:
+                send_whatsapp_message()
+            elif "close notepad" in command:
+                os.system("taskkill /f /im notepad.exe")
+                speak("Notepad has been closed.")
+            elif "close microsoft edge" in command:
+                os.system("taskkill /f /im msedge.exe")
+                speak("Microsoft Edge has been closed.")
+            elif "close whatsapp" in command:
+                os.system("taskkill /f /im whatsapp.exe")
+                speak("WhatsApp has been closed.")
+            elif "close settings" in command:
+                os.system("taskkill /f /im SystemSettings.exe")
+                speak("Settings have been closed.")
+            elif "close camera" in command:
+                os.system("taskkill /f /im WindowsCamera.exe")
+                speak("Camera has been closed.")
+            elif "stop" in command:
+                speak("Goodbye!")
+                break
+            else:
+                speak("I couldn't understand that. Can you repeat?")
